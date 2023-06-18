@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
+from openai.error import AuthenticationError
 
 def generate_prompt(data, student_id, subject):
     # Filter data for the specific student
@@ -58,7 +59,7 @@ You SHOULD be aware of the format for the question type requested in this prompt
 # llm = OpenAI(temperature=0.7, model="text-davinci-003")
 
 
-def check_student_id():
+def check_student_id(llm):
     student_id = st.text_input("Enter the Student ID")
     subject = st.selectbox("Select the Subject", ["Math", "Science", "English"])
     question_format = st.selectbox("Select the Question Format", ["MCQ", "True/False", "Fill in the Blanks", "Short Answer", "Essay Questions"])
@@ -107,7 +108,17 @@ def check_student_id():
             """)
             
             st.success("The entered student ID exists in the database. Generating questions now.")
-            generate_questions()
+            
+            try:
+                # llm = OpenAI(openai_api_key=openai_api_key, temperature=0.7, model="text-davinci-003")
+                llm
+                generate_questions()
+                
+            except AuthenticationError:
+                e = RuntimeError('There is an error processing your request right now.')
+                st.error(e) 
+            
+            
         else:
             st.warning("The entered student ID doesn't exist in the database. Please check the ID and try again.")
             return False
@@ -312,7 +323,9 @@ def display_questions_and_collect_answers(questions_choices):
 
 def teacher_actions(openai_api_key):
     global llm
-    llm = OpenAI(openai_api_key=openai_api_key, temperature=0.7, model="text-davinci-003")
+    llm = OpenAI(openai_api_key=openai_api_key, 
+                 temperature=0.7, 
+                 model="text-davinci-003")
 
     
     tab1, tab2, tab3 = st.tabs(["Questions Generation", "View Students' Details", "View Answers"])
@@ -331,7 +344,8 @@ def teacher_actions(openai_api_key):
         if st.session_state.student_id and st.session_state.subject and st.session_state.question_format and st.session_state.num_questions:
             generate_questions()
         else:
-            check_student_id()
+            check_student_id(llm)
+            
             
     with tab2:
         st.markdown("""
