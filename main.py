@@ -1,11 +1,17 @@
 import streamlit as st
 import teacher
 import student
+from openai.error import AuthenticationError
 
 st.markdown("<h2 style='text-align: center; color: black;'>AI-Powered Personalized Academic Aid</h2>", unsafe_allow_html=True)
 
 # Add an input field for the API key
-openai_api_key = st.text_input("Enter your OpenAI API key")
+openai_api_key = st.text_input("Enter your OpenAI API key", placeholder="sk-")
+
+if openai_api_key:
+    pass
+else:
+    st.warning("You have not entered your OpenAI API key yet!")
 
 # Check if 'role' is in the session state
 if 'role' not in st.session_state:
@@ -23,9 +29,13 @@ st.session_state['openai_api_key'] = openai_api_key
 
 if st.session_state['role'] == "Teacher":
     if openai_api_key:
-        teacher.teacher_actions(openai_api_key)
-    else:
-        st.warning("Please enter your OpenAI API key to proceed.")
+        try:
+            teacher.teacher_actions(openai_api_key)
+        except AuthenticationError:
+            st.error("Invalid API key. Please check your OpenAI API key and try again.")
+
 
 elif st.session_state['role'] == "Student":
     student.student_actions()
+
+
